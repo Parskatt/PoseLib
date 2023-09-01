@@ -23,7 +23,7 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BEFORE_ALL: sudo apt install libeigen3-dev
+          CIBW_BEFORE_ALL: apt install libeigen3-dev
         # to supply options, put them in 'env', like:
         # env:
         #   CIBW_SOME_OPTION: value
