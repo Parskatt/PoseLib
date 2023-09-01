@@ -23,6 +23,8 @@ jobs:
 
       - name: Install Eigen dependency
         run: sudo apt install libeigen3-dev
+      - name: where eigen
+        run: dpkg -L libeigen3-dev
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         # to supply options, put them in 'env', like:
