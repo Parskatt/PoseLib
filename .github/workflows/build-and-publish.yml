@@ -28,6 +28,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BEFORE_ALL: yum install -y eigen3-devel
+          CIBW_ARCHS_LINUX: "native"
         # to supply options, put them in 'env', like:
         # env:
         #   CIBW_SOME_OPTION: value
