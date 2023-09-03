@@ -41,7 +41,7 @@ class CMakeBuild(build_ext):
         build_args = ['--config', cfg]
 
         if platform.system() == "Windows":
-            print(f'CMAKE TOOLCHAIN FILE IS: {os.environ.get('CMAKE_TOOLCHAIN_FILE')}')
+            print(f"CMAKE TOOLCHAIN FILE IS: {os.environ.get('CMAKE_TOOLCHAIN_FILE')}")
             if os.environ.get('CMAKE_TOOLCHAIN_FILE') is not None:
                 cmake_toolchain_file = os.environ.get('CMAKE_TOOLCHAIN_FILE')
                 print(f'-DCMAKE_TOOLCHAIN_FILE={cmake_toolchain_file}')
