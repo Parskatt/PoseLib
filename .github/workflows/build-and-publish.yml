@@ -31,7 +31,7 @@ jobs:
           CIBW_ARCHS_LINUX: "native"
           # I don't know how to compile on windows, please help
           CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg install eigen3
-          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE = "C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
