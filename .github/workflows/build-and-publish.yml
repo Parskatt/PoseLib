@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ['3.10']
 
     steps:
@@ -27,8 +27,12 @@ jobs:
       - name: Build wheels
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
-          CIBW_BEFORE_ALL: yum install -y eigen3-devel
+          CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
+          CIBW_BEFORE_ALL_WINDOWS: conda install -c conda-forge eigen
+          CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_LINUX: "native"
+          CIBW_ARCHS_WINDOWS: "native"
+          CIBW_ARCHS_MACOS: "native"
           CIBW_SKIP: "*-musllinux_x86_64"
         # to supply options, put them in 'env', like:
         # env:
