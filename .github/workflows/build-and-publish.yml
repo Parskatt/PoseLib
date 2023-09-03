@@ -28,11 +28,7 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
-          CIBW_BEFORE_ALL_WINDOWS: |
-            C:\Miniconda\condabin\conda.bat init powershell
-            C:\Miniconda\condabin\conda.bat activate base
-            C:\Miniconda\condabin\conda.bat install -c conda-forge eigen
-
+          CIBW_BEFORE_ALL_WINDOWS: choco install eigen
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_LINUX: "native"
           CIBW_ARCHS_WINDOWS: "native"
