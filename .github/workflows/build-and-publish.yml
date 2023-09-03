@@ -29,7 +29,9 @@ jobs:
         env:
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           # I don't know how to compile on windows, please help
-          CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg install eigen3 
+          CIBW_BEFORE_ALL_WINDOWS: |
+            C:\vcpkg\vcpkg install eigen3
+            $env:CMAKE_TOOLCHAIN_FILE = "C:\vcpkg\scripts\buildsystems\vcpkg.cmake"
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_LINUX: "native"
           CIBW_ARCHS_WINDOWS: "native"
