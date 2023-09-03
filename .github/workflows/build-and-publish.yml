@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [macos-latest]
         python-version: ['3.10']
 
     steps:
@@ -28,8 +28,8 @@ jobs:
         run: python -m cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
-          CIBW_BEFORE_ALL_WINDOWS: |
-            C:\vcpkg\vcpkg install eigen3
+          # I don't know how to compile on windows, please help
+          CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg install eigen3 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
           CIBW_ARCHS_LINUX: "native"
           CIBW_ARCHS_WINDOWS: "native"

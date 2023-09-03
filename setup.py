@@ -51,6 +51,9 @@ class CMakeBuild(build_ext):
                     cmake_args += ['-DVCPKG_TARGET_TRIPLET=x64-windows']
                 cmake_args += ['-A', 'x64']
             build_args += ['--', '/m']
+        elif platform.system() == "MacOS":
+            cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
+            build_args += ['--', '-j2', '-fno-aligned-allocation']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             build_args += ['--', '-j2']
