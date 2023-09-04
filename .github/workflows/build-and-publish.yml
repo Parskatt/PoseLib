@@ -29,13 +29,13 @@ jobs:
         env:
           CIBW_BEFORE_ALL_LINUX: yum install -y eigen3-devel
           CIBW_ARCHS_LINUX: "native"
-          # I don't know how to compile on windows, please help
+          
           CIBW_BEFORE_ALL_WINDOWS: C:\vcpkg\vcpkg --triplet x64-windows install eigen3
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_TOOLCHAIN_FILE="C:\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
           CIBW_ARCHS_WINDOWS: "native"
 
           CIBW_BEFORE_ALL_MACOS: brew install eigen
-          CIBW_ARCHS_MACOS: "native"
+          CIBW_ARCHS_MACOS: "arm64 x86_64"
           
           CIBW_SKIP: "*-musllinux_x86_64"
         # to supply options, put them in 'env', like:
