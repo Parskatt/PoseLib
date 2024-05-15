@@ -4,7 +4,7 @@ import sys
 import platform
 import subprocess
 
-from setuptools import setup, Extension
+from setuptools import find_packages, setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
 
@@ -39,7 +39,6 @@ class CMakeBuild(build_ext):
                       '-DWITH_BENCHMARK=ON',
                       '-DPYTHON_PACKAGE=ON',
                       '-DBUILD_SHARED_LIBS=OFF',]
-        print(f"Prefix is: {os.environ.get('CMAKE_INSTALL_PREFIX')}")
         if os.environ.get('CMAKE_INSTALL_PREFIX') is not None:
             cmake_args += [f"-DCMAKE_INSTALL_PREFIX={os.environ.get('CMAKE_INSTALL_PREFIX')}"]
         cfg = 'Debug' if self.debug else 'Release'
@@ -75,14 +74,16 @@ class CMakeBuild(build_ext):
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
-    name="poselib",
+    name="pyposelib",
     version="2.0.2",
     author="Viktor Larsson and contributors",
     author_email="viktor.larsson@math.lth.se",
+    packages = find_packages(include="pyposelib/*"),
     description="",
     long_description="",
     install_requires=["numpy"],
-    ext_modules=[CMakeExtension("pyposelib")],
+    package_data={"pyposelib": ["poselib/*.pyi"]},
+    ext_modules=[CMakeExtension("pyposelib/poselib")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
 )

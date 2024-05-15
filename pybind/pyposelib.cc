@@ -760,6 +760,8 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
 PYBIND11_MODULE(poselib, m) {
     py::class_<poselib::CameraPose>(m, "CameraPose")
         .def(py::init<>())
+        .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &>())
+        .def(py::init<const Eigen::Matrix3d &, const Eigen::Vector3d &>())
         .def_readwrite("q", &poselib::CameraPose::q)
         .def_readwrite("t", &poselib::CameraPose::t)
         .def_property("R", &poselib::CameraPose::R,
@@ -776,6 +778,8 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Camera>(m, "Camera")
         .def(py::init<>())
+        .def(py::init<const std::string &, const std::vector<double> &, int, int>())
+        .def(py::init<int, const std::vector<double> &, int, int>())
         .def_readwrite("params", &poselib::Camera::params)
         .def("focal", &poselib::Camera::focal, "Returns the camera focal length.")
         .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
@@ -786,6 +790,7 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Image>(m, "Image")
         .def(py::init<>())
+        .def(py::init<poselib::CameraPose &, poselib::Camera &>())
         .def_readwrite("camera", &poselib::Image::camera)
         .def_readwrite("pose", &poselib::Image::pose)
         .def("__repr__", [](const poselib::Image &a) {

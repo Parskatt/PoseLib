@@ -35,3 +35,11 @@
 .vscode
 .vs/*
 out/*
+
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*egg-info
