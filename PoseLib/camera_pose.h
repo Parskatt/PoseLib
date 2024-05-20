@@ -77,6 +77,8 @@ struct alignas(32) Image {
     // Constructors (Defaults to identity camera and pose)
     Image() : pose(CameraPose()), camera(Camera()) {}
     Image(CameraPose pose, Camera camera) : pose(pose), camera(camera) {}
+    //Image(const CameraPose &pose, const Camera &camera) : pose(pose), camera(camera) {}
+
 };
 
 typedef std::vector<Image> ImageVector;

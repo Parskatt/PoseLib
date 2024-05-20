@@ -1,5 +1,6 @@
 from typing import Tuple, List, overload
 import numpy
+import enum
 import pyposelib
 from .robust import *
 from .minimal_solvers import *
@@ -17,6 +18,15 @@ class RansacOptions:
     real_focal_check: bool = False
     def __init__(self, kwargs:dict = None) -> None:...
 
+# FIXME: Don't really like that I manually spec these here since could change over in c++ //Johan
+# Although, I guess that the same applies to all other classes here.
+class BundleLossType(enum.Enum):
+    TRIVIAL = 0
+    TRUNCATED = 1
+    HUBER = 2
+    CAUCHY = 3
+    TRUNCATED_LE_ZACH = 4
+
 class BundleOptions:
     max_iterations: int = 100
     loss_type: pyposelib.LossType = pyposelib.LossType.CAUCHY
@@ -30,8 +40,8 @@ class BundleOptions:
     def __init__(self, kwargs:dict = None) -> None:...
 
 class CameraPose:
-    q: numpy.ndarray[numpy.float64[4, 1]]
-    t: numpy.ndarray[numpy.float64[3, 1]]
+    q: numpy.ndarray[numpy.float64[4, 1]] = numpy.array([0.0, 0.0, 0.0, 1.0])
+    t: numpy.ndarray[numpy.float64[3, 1]] = numpy.array([0.0, 0.0, 0.0])
     def R(self) -> numpy.ndarray[numpy.float64[3, 3]]:...
     def rotate(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:...
     def derotate(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:...
@@ -44,6 +54,10 @@ class CameraPose:
     def __init__(self) -> None:...    
     
 class Camera:
+    model_name: str = "PINHOLE"
+    params: numpy.ndarray[numpy.float64] = numpy.array([1.0, 1.0, 0.0, 0.0])
+    width: int = 0
+    height: int = 0
     def __init__(self) -> None:...
     def __init__(self, model_name: str, params: numpy.ndarray[numpy.float64], width: int, height: int) -> None:...
     def __init__(self, model_id: int, params: numpy.ndarray[numpy.float64], width: int, height: int) -> None:...
@@ -63,5 +77,7 @@ class Camera:
 
 
 class Image:
+    pose: CameraPose = CameraPose()
+    camera: Camera = Camera()
     def __init__(self) -> None:...
     def __init__(self, pose: CameraPose, camera: Camera) -> None:...

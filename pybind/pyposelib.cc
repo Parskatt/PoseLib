@@ -1,3 +1,4 @@
+#define PYBIND11_DETAILED_ERROR_MESSAGES
 #include "helpers.h"
 
 #include <PoseLib/poselib.h>
@@ -7,7 +8,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <tuple>
-
 namespace py = pybind11;
 
 namespace poselib {
@@ -28,12 +28,23 @@ py::dict BundleOptions_wrapper(py::dict overwrite) {
     return result;
 }
 
+
 std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
     p3p(x, X, &output);
     return output;
 }
-
+std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector2d> &x, const std::vector<Eigen::Vector3d> &X) {
+    std::vector<CameraPose> output;
+    std::vector<Eigen::Vector3d> x_h;
+    x_h.resize(x.size());
+    
+    for (size_t i = 0; i < x.size(); i++){
+        x_h[i] = x[i].homogeneous().normalized();
+    }
+    p3p(x_h, X, &output);
+    return output;
+}
 std::vector<CameraPose> gp3p_wrapper(const std::vector<Eigen::Vector3d> &p, const std::vector<Eigen::Vector3d> &x,
                                      const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
@@ -436,6 +447,26 @@ refine_generalized_absolute_pose_wrapper(const std::vector<std::vector<Eigen::Ve
     return std::make_pair(refined_pose, output_dict);
 }
 
+
+
+std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                                               const std::vector<Eigen::Vector2d> points2D_2,
+                                                               const Camera &camera1,
+                                                               const Camera &camera2,
+                                                               const RansacOptions &ransac_opt = RansacOptions(),
+                                                               const BundleOptions &bundle_opt = BundleOptions()) {
+    CameraPose pose;
+    std::vector<char> inlier_mask;
+
+    RansacStats stats =
+        estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
+
+    py::dict output_dict;
+    write_to_dict(stats, output_dict);
+    output_dict["inliers"] = convert_inlier_vector(inlier_mask);
+    return std::make_pair(pose, output_dict);
+}
+
 std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                const std::vector<Eigen::Vector2d> points2D_2,
                                                                const py::dict &camera1_dict,
@@ -452,17 +483,15 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
     BundleOptions bundle_opt;
     bundle_opt.loss_scale = 0.5 * ransac_opt.max_epipolar_error;
     update_bundle_options(bundle_opt_dict, bundle_opt);
+    return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt);
+}
 
-    CameraPose pose;
-    std::vector<char> inlier_mask;
-
-    RansacStats stats =
-        estimate_relative_pose(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt, &pose, &inlier_mask);
-
-    py::dict output_dict;
-    write_to_dict(stats, output_dict);
-    output_dict["inliers"] = convert_inlier_vector(inlier_mask);
-    return std::make_pair(pose, output_dict);
+std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
+                                                               const std::vector<Eigen::Vector2d> points2D_2,
+                                                               const Camera &camera,
+                                                               const RansacOptions &ransac_opt = RansacOptions(),
+                                                               const BundleOptions &bundle_opt = BundleOptions()) {
+    return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera, camera, ransac_opt, bundle_opt);
 }
 
 std::pair<ImagePair, py::dict>
@@ -755,9 +784,74 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
     output_dict["inliers"] = convert_inlier_vector(inlier_mask);
     return std::make_pair(pose, output_dict);
 }
+//py::array_t
+std::vector<std::vector<CameraPose>> batched_p3p(const py::array_t<double> x, const py::array_t<double> X) {
+    auto r = x.unchecked<3>(), R = X.unchecked<3>();
+    double result = 0.0;
+    std::vector<std::vector<CameraPose>> output;
+    std::vector<Eigen::Vector2d> _x(r.shape(1));
+    std::vector<Eigen::Vector3d> _X(r.shape(1));
+
+    for (py::ssize_t i = 0; i < r.shape(0); i++){
+        for (py::ssize_t j = 0; j < r.shape(1); j++){    
+            _x[j] = Eigen::Vector2d(r(i, j, 0), r(i, j, 1));
+            _X[j] = Eigen::Vector3d(R(i, j, 0), R(i, j, 1), R(i, j, 2));
+        }
+        output.emplace_back(p3p_wrapper(_x, _X));
+    }
+    return output;
+}
+
 } // namespace poselib
 
 PYBIND11_MODULE(poselib, m) {
+    /* m.def("RansacOptions", &poselib::RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
+    m.def("BundleOptions", &poselib::BundleOptions_wrapper, py::arg("opt") = py::dict(),
+          "Options for non-linear refinement."); */
+
+    // TODO: can't get BundleOptions.LossType enum as module in python //Johan
+    py::enum_<poselib::BundleOptions::LossType>(m, "BundleLossType")
+    .value("TRIVIAL", poselib::BundleOptions::LossType::TRIVIAL)
+    .value("TRUNCATED", poselib::BundleOptions::LossType::TRUNCATED)
+    .value("HUBER", poselib::BundleOptions::LossType::HUBER)
+    .value("CAUCHY", poselib::BundleOptions::LossType::CAUCHY)
+    .value("TRUNCATED_LE_ZACH", poselib::BundleOptions::LossType::TRUNCATED_LE_ZACH);
+     
+    py::class_<poselib::RansacOptions>(m, "RansacOptions")
+        .def(py::init<size_t, size_t, double, double, double, double, unsigned long, bool ,size_t, bool>(),
+             py::arg("max_iterations") = 100000, py::arg("min_iterations") = 1000, py::arg("dyn_num_trials_mult") = 3.0,
+             py::arg("success_prob") = 0.9999, py::arg("max_reproj_error") = 12.0, py::arg("max_epipolar_error") = 1.0,
+             py::arg("seed") = 0, py::arg("progressive_sampling") = false, py::arg("max_prosac_iterations") = 100000,
+             py::arg("real_focal_check") = false)
+        .def_readwrite("max_iterations", &poselib::RansacOptions::max_iterations)
+        .def_readwrite("min_iterations", &poselib::RansacOptions::min_iterations)
+        .def_readwrite("dyn_num_trials_mult", &poselib::RansacOptions::dyn_num_trials_mult)
+        .def_readwrite("success_prob", &poselib::RansacOptions::success_prob)
+        .def_readwrite("max_reproj_error", &poselib::RansacOptions::max_reproj_error)
+        .def_readwrite("max_epipolar_error", &poselib::RansacOptions::max_epipolar_error)
+        .def_readwrite("seed", &poselib::RansacOptions::seed)
+        .def_readwrite("progressive_sampling", &poselib::RansacOptions::progressive_sampling)
+        .def_readwrite("max_prosac_iterations", &poselib::RansacOptions::max_prosac_iterations)
+        .def_readwrite("real_focal_check", &poselib::RansacOptions::real_focal_check)
+        ;
+        
+    py::class_<poselib::BundleOptions>(m, "BundleOptions")
+        .def(py::init<size_t, poselib::BundleOptions::LossType, double, double, double,double,double,double,bool>(),
+             py::arg("max_iterations") = 100, py::arg("loss_type") = poselib::BundleOptions::LossType::CAUCHY,
+             py::arg("loss_scale") = 1.0, py::arg("gradient_tol") = 1e-10, py::arg("step_tol") = 1e-8,
+             py::arg("initial_lambda") = 1e-3, py::arg("min_lambda") = 1e-10, py::arg("max_lambda") = 1e10,
+             py::arg("verbose") = false)
+        .def_readwrite("max_iterations", &poselib::BundleOptions::max_iterations)
+        .def_readwrite("loss_type", &poselib::BundleOptions::loss_type)
+        .def_readwrite("loss_scale", &poselib::BundleOptions::loss_scale)
+        .def_readwrite("gradient_tol", &poselib::BundleOptions::gradient_tol)
+        .def_readwrite("step_tol", &poselib::BundleOptions::step_tol)
+        .def_readwrite("initial_lambda", &poselib::BundleOptions::initial_lambda)
+        .def_readwrite("min_lambda", &poselib::BundleOptions::min_lambda)
+        .def_readwrite("max_lambda", &poselib::BundleOptions::max_lambda)
+        .def_readwrite("verbose", &poselib::BundleOptions::verbose)
+        ;
+
     py::class_<poselib::CameraPose>(m, "CameraPose")
         .def(py::init<>())
         .def(py::init<const Eigen::Vector4d &, const Eigen::Vector3d &>())
@@ -790,7 +884,8 @@ PYBIND11_MODULE(poselib, m) {
 
     py::class_<poselib::Image>(m, "Image")
         .def(py::init<>())
-        .def(py::init<poselib::CameraPose &, poselib::Camera &>())
+        //TODO: broken
+        //.def(py::init<const poselib::CameraPose &, const poselib::Camera &>())
         .def_readwrite("camera", &poselib::Image::camera)
         .def_readwrite("pose", &poselib::Image::pose)
         .def("__repr__", [](const poselib::Image &a) {
@@ -822,7 +917,10 @@ PYBIND11_MODULE(poselib, m) {
     m.doc() = "This library provides a collection of minimal solvers for camera pose estimation.";
 
     // Minimal solvers
-    m.def("p3p", &poselib::p3p_wrapper, py::arg("x"), py::arg("X"));
+    m.def("p3p", py::overload_cast<const std::vector<Eigen::Vector2d>&, const std::vector<Eigen::Vector3d>&>(&poselib::p3p_wrapper), py::arg("x"), py::arg("X"));
+    m.def("p3p", py::overload_cast<const std::vector<Eigen::Vector3d>&, const std::vector<Eigen::Vector3d>&>(&poselib::p3p_wrapper), py::arg("x"), py::arg("X"));
+    //m.def("p3p", py::overload_cast<const std::vector<std::vector<Eigen::Vector2d>>&, const std::vector<std::vector<Eigen::Vector3d>>&>(&poselib::batched_p3p), py::arg("x"), py::arg("X"));
+    m.def("p3p", py::overload_cast<const py::array_t<double>, const py::array_t<double>>(&poselib::batched_p3p));//, py::arg("x"), py::arg("X"));
     m.def("gp3p", &poselib::gp3p_wrapper, py::arg("p"), py::arg("x"), py::arg("X"));
     m.def("gp4ps", &poselib::gp4ps_wrapper, py::arg("p"), py::arg("x"), py::arg("X"), py::arg("filter_solutions"));
     m.def("gp4ps_kukelova", &poselib::gp4ps_kukelova_wrapper, py::arg("p"), py::arg("x"), py::arg("X"),
@@ -854,6 +952,7 @@ PYBIND11_MODULE(poselib, m) {
     m.def("relpose_upright_planar_2pt", &poselib::relpose_upright_planar_2pt_wrapper, py::arg("x1"), py::arg("x2"));
     m.def("relpose_upright_planar_3pt", &poselib::relpose_upright_planar_3pt_wrapper, py::arg("x1"), py::arg("x2"));
 
+
     // Robust estimators
     m.def("estimate_absolute_pose", &poselib::estimate_absolute_pose_wrapper, py::arg("points2D"), py::arg("points3D"),
           py::arg("camera_dict"), py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
@@ -866,9 +965,43 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose estimation with non-linear refinement.");
-    m.def("estimate_relative_pose", &poselib::estimate_relative_pose_wrapper, py::arg("points2D_1"),
-          py::arg("points2D_2"), py::arg("camera1_dict"), py::arg("camera2_dict"), py::arg("ransac_opt") = py::dict(),
-          py::arg("bundle_opt") = py::dict(), "Relative pose estimation with non-linear refinement.");
+    m.def("estimate_relative_pose", 
+        py::overload_cast<
+            const std::vector<Eigen::Vector2d>,
+            const std::vector<Eigen::Vector2d>,
+            const py::dict &,
+            const py::dict &,
+            const py::dict &,
+            const py::dict &>(&poselib::estimate_relative_pose_wrapper),
+        py::arg("points2D_1"), py::arg("points2D_2"),
+        py::arg("camera1_dict"), py::arg("camera2_dict"),
+        py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
+        "Relative pose estimation with non-linear refinement.");
+    m.def("estimate_relative_pose", 
+        py::overload_cast<
+            const std::vector<Eigen::Vector2d>, 
+            const std::vector<Eigen::Vector2d>,
+            const poselib::Camera&,
+            const poselib::Camera&,
+            const poselib::RansacOptions&,
+            const poselib::BundleOptions&
+            >(&poselib::estimate_relative_pose_wrapper),
+        py::arg("points2D_1"), py::arg("points2D_2"),
+        py::arg("camera1"), py::arg("camera2"),
+        py::arg("ransac_opt") = poselib::RansacOptions(), py::arg("bundle_opt") = poselib::BundleOptions(),
+        "Relative pose estimation with non-linear refinement.");
+    m.def("estimate_relative_pose", 
+        py::overload_cast<
+            const std::vector<Eigen::Vector2d>, 
+            const std::vector<Eigen::Vector2d>,
+            const poselib::Camera&,
+            const poselib::RansacOptions&,
+            const poselib::BundleOptions&
+            >(&poselib::estimate_relative_pose_wrapper),
+        py::arg("points2D_1"), py::arg("points2D_2"),
+        py::arg("camera"),
+        py::arg("ransac_opt") = poselib::RansacOptions(), py::arg("bundle_opt") = poselib::BundleOptions(),
+        "Relative pose estimation with non-linear refinement.");    
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
@@ -922,9 +1055,6 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("camera2_dict"), py::arg("bundle_opt") = py::dict(),
           "Generalized relative pose non-linear refinement.");
 
-    m.def("RansacOptions", &poselib::RansacOptions_wrapper, py::arg("opt") = py::dict(), "Options for RANSAC.");
-    m.def("BundleOptions", &poselib::BundleOptions_wrapper, py::arg("opt") = py::dict(),
-          "Options for non-linear refinement.");
 
     m.attr("__version__") = std::string(POSELIB_VERSION);
 }
