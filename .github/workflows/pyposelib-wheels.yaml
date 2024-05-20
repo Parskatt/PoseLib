@@ -38,7 +38,7 @@ jobs:
           CIBW_SKIP: "*-musllinux_x86_64 pp3*"
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: >
-            pytest tests/*
+            pytest {package}/tests
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
