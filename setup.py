@@ -82,6 +82,7 @@ setup(
     description="",
     long_description="",
     install_requires=["numpy"],
+    tests_require = ["pytest"],
     package_data={"pyposelib": ["poselib/*.pyi"]},
     ext_modules=[CMakeExtension("pyposelib/poselib")],
     cmdclass={"build_ext": CMakeBuild},
