@@ -787,7 +787,6 @@ std::pair<CameraPose, py::dict> estimate_1D_radial_absolute_pose_wrapper(const s
 //py::array_t
 std::vector<std::vector<CameraPose>> batched_p3p(const py::array_t<double> x, const py::array_t<double> X) {
     auto r = x.unchecked<3>(), R = X.unchecked<3>();
-    double result = 0.0;
     std::vector<std::vector<CameraPose>> output;
     std::vector<Eigen::Vector2d> _x(r.shape(1));
     std::vector<Eigen::Vector3d> _X(r.shape(1));
