@@ -2,36 +2,36 @@ import pyposelib
 import numpy as np
 
 def test_camera():
-    a = pyposelib.Camera()
+    pyposelib.Camera()
     
 def test_camera_pose():
-    b = pyposelib.CameraPose(np.random.rand(4,1), np.random.rand(3,1))
+    pyposelib.CameraPose(np.random.rand(4,1), np.random.rand(3,1))
 
 def test_image():
-    hej = pyposelib.Image()
+    pyposelib.Image()
 
 def test_bundle_options():
-    hej = pyposelib.BundleOptions()
+    pyposelib.BundleOptions()
 
 def test_ransac_options():
-    hej = pyposelib.RansacOptions()
+    pyposelib.RansacOptions()
 
 def test_relative_pose():
-    hej = pyposelib.estimate_relative_pose(np.random.randn(5,2), np.random.randn(5,2), {})
+    pyposelib.estimate_relative_pose(np.random.randn(5,2), np.random.randn(5,2), {})
 
 def test_fundamental():
-    hej = pyposelib.estimate_fundamental(np.random.randn(8,2), np.random.randn(8,2), {})
+    pyposelib.estimate_fundamental(np.random.randn(8,2), np.random.randn(8,2), {})
 
 def test_absolute_pose():
     camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
-    hej = pyposelib.estimate_absolute_pose(np.random.randn(5,2), np.random.randn(5,3), camera)
+    pyposelib.estimate_absolute_pose(np.random.randn(5,2), np.random.randn(5,3), camera)
 
 def test_p3p():
     # note: probably should raise exception for n-points > 3
-    hej = pyposelib.p3p(np.random.randn(8,2), np.random.randn(8,3))
+    pyposelib.p3p(np.random.randn(8,2), np.random.randn(8,3))
     
 def test_batched_p3p():
-    hej = pyposelib.p3p(np.random.randn(10,3,2), np.random.randn(10,3,3))
+    pyposelib.p3p(np.random.randn(10,3,2), np.random.randn(10,3,3))
 
 def compare_p3p():
     N = 10_000
