@@ -26,6 +26,11 @@ def test_absolute_pose():
     camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
     pyposelib.estimate_absolute_pose(np.random.randn(5,2), np.random.randn(5,3), camera)
 
+def test_pnp():
+    camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
+    pyposelib.pnp(np.random.randn(5,2), np.random.randn(5,3), camera)
+    
+
 def test_p3p():
     # note: probably should raise exception for n-points > 3
     pyposelib.p3p(np.random.randn(8,2), np.random.randn(8,3))
