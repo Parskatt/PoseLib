@@ -27,7 +27,23 @@ py::dict BundleOptions_wrapper(py::dict overwrite) {
     write_to_dict(opt, result);
     return result;
 }
+std::vector<Eigen::Vector2d> convert_to_vector_n_2(const py::array_t<double> &array) {
+    auto r = array.unchecked<2>();
+    std::vector<Eigen::Vector2d> output(r.shape(0));
+    for (py::ssize_t i = 0; i < r.shape(0); ++i) {
+        output[i] = Eigen::Vector2d(r(i, 0), r(i, 1));
+    }
+    return output; 
+}
 
+std::vector<Eigen::Vector3d> convert_to_vector_n_3(const py::array_t<double> &array) {
+    auto r = array.unchecked<2>();
+    std::vector<Eigen::Vector3d> output(r.shape(0));
+    for (py::ssize_t i = 0; i < r.shape(0); ++i) {
+        output[i] = Eigen::Vector3d(r(i, 0), r(i, 1), r(i, 2));
+    }
+    return output; 
+}
 
 std::vector<CameraPose> p3p_wrapper(const std::vector<Eigen::Vector3d> &x, const std::vector<Eigen::Vector3d> &X) {
     std::vector<CameraPose> output;
@@ -485,7 +501,6 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
     update_bundle_options(bundle_opt_dict, bundle_opt);
     return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera1, camera2, ransac_opt, bundle_opt);
 }
-
 std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                                                const std::vector<Eigen::Vector2d> points2D_2,
                                                                const Camera &camera,
@@ -494,6 +509,26 @@ std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const std::vector
     return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera, camera, ransac_opt, bundle_opt);
 }
 
+std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const py::array_t<double> points2D_1,
+                                                               const py::array_t<double> points2D_2,
+                                                               const Camera &camera1,
+                                                               const Camera &camera2,
+                                                               const RansacOptions &ransac_opt = RansacOptions(),
+                                                               const BundleOptions &bundle_opt = BundleOptions()) {
+    std::vector<Eigen::Vector2d> points2D_1_vec = convert_to_vector_n_2(points2D_1);
+    std::vector<Eigen::Vector2d> points2D_2_vec = convert_to_vector_n_2(points2D_2);
+    return estimate_relative_pose_wrapper(points2D_1_vec, points2D_2_vec, camera1, camera2,
+                                          ransac_opt, bundle_opt);
+}
+
+std::pair<CameraPose, py::dict> estimate_relative_pose_wrapper(const py::array_t<double> points2D_1,
+                                                               const py::array_t<double> points2D_2,
+                                                               const Camera &camera,
+                                                               const RansacOptions &ransac_opt = RansacOptions(),
+                                                               const BundleOptions &bundle_opt = BundleOptions()) {
+    return estimate_relative_pose_wrapper(points2D_1, points2D_2, camera, camera,
+                                          ransac_opt, bundle_opt);
+}
 std::pair<ImagePair, py::dict>
 estimate_shared_focal_relative_pose_wrapper(const std::vector<Eigen::Vector2d> points2D_1,
                                             const std::vector<Eigen::Vector2d> points2D_2, const Eigen::Vector2d pp,
@@ -873,6 +908,7 @@ PYBIND11_MODULE(poselib, m) {
         .def(py::init<>())
         .def(py::init<const std::string &, const std::vector<double> &, int, int>())
         .def(py::init<int, const std::vector<double> &, int, int>())
+        .def(py::init<const Eigen::Matrix3d &, int, int>())
         .def_readwrite("params", &poselib::Camera::params)
         .def("focal", &poselib::Camera::focal, "Returns the camera focal length.")
         .def("focal_x", &poselib::Camera::focal_x, "Returns the camera focal_x.")
@@ -964,6 +1000,7 @@ PYBIND11_MODULE(poselib, m) {
           py::arg("points2D"), py::arg("points3D"), py::arg("camera_ext"), py::arg("camera_dicts"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Generalized absolute pose estimation with non-linear refinement.");
+    
     m.def("estimate_relative_pose", 
         py::overload_cast<
             const std::vector<Eigen::Vector2d>,
@@ -1000,15 +1037,44 @@ PYBIND11_MODULE(poselib, m) {
         py::arg("points2D_1"), py::arg("points2D_2"),
         py::arg("camera"),
         py::arg("ransac_opt") = poselib::RansacOptions(), py::arg("bundle_opt") = poselib::BundleOptions(),
-        "Relative pose estimation with non-linear refinement.");    
+        "Relative pose estimation with non-linear refinement.");
+    m.def("estimate_relative_pose", 
+        py::overload_cast<
+            const py::array_t<double>, 
+            const py::array_t<double>,
+            const poselib::Camera&,
+            const poselib::Camera&,
+            const poselib::RansacOptions&,
+            const poselib::BundleOptions&
+            >(&poselib::estimate_relative_pose_wrapper),
+        py::arg("points2D_1"), py::arg("points2D_2"),
+        py::arg("camera1"), py::arg("camera2"),
+        py::arg("ransac_opt") = poselib::RansacOptions(), py::arg("bundle_opt") = poselib::BundleOptions(),
+        "Relative pose estimation with non-linear refinement.");        
+    m.def("estimate_relative_pose", 
+        py::overload_cast<
+            const py::array_t<double>, 
+            const py::array_t<double>,
+            const poselib::Camera&,
+            const poselib::RansacOptions&,
+            const poselib::BundleOptions&
+            >(&poselib::estimate_relative_pose_wrapper),
+        py::arg("points2D_1"), py::arg("points2D_2"),
+        py::arg("camera"),
+        py::arg("ransac_opt") = poselib::RansacOptions(), py::arg("bundle_opt") = poselib::BundleOptions(),
+        "Relative pose estimation with non-linear refinement.");
+
+    
     m.def("estimate_shared_focal_relative_pose", &poselib::estimate_shared_focal_relative_pose_wrapper,
           py::arg("points2D_1"), py::arg("points2D_2"), py::arg("pp") = Eigen::Vector2d::Zero(),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Relative pose estimation with unknown equal focal lengths with non-linear refinement.");
+
     m.def("estimate_fundamental", &poselib::estimate_fundamental_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Fundamental matrix estimation with non-linear refinement. Note: if you have known intrinsics you should use "
           "estimate_relative_pose instead!");
+
     m.def("estimate_homography", &poselib::estimate_homography_wrapper, py::arg("points2D_1"), py::arg("points2D_2"),
           py::arg("ransac_opt") = py::dict(), py::arg("bundle_opt") = py::dict(),
           "Homography matrix estimation with non-linear refinement.");

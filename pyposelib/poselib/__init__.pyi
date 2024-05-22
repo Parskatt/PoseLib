@@ -6,17 +6,17 @@ from .robust import *
 from .minimal_solvers import *
 
 class RansacOptions:
-    max_iterations: int = 100_000
-    min_iterations: int = 1_000
-    dyn_num_trials_mult: float = 3.0
-    success_prob: float = 0.9999
-    max_reproj_error: float = 12.0
-    max_epipolar_error: float = 1.0
-    seed: int = 0
-    progressive_sampling: bool = False
-    max_prosac_iterations: int = 100_000
-    real_focal_check: bool = False
-    def __init__(self, kwargs:dict = None) -> None:...
+    def __init__(self,     
+        max_iterations: int = 100_000,
+        min_iterations: int = 1_000,
+        dyn_num_trials_mult: float = 3.0,
+        success_prob: float = 0.9999,
+        max_reproj_error: float = 12.0,
+        max_epipolar_error: float = 1.0,
+        seed: int = 0,
+        progressive_sampling: bool = False,
+        max_prosac_iterations: int = 100_000,
+        real_focal_check: bool = False) -> None:...
 
 # FIXME: Don't really like that I manually spec these here since could change over in c++ //Johan
 # Although, I guess that the same applies to all other classes here.
@@ -28,20 +28,20 @@ class BundleLossType(enum.Enum):
     TRUNCATED_LE_ZACH = 4
 
 class BundleOptions:
-    max_iterations: int = 100
-    loss_type: pyposelib.LossType = pyposelib.LossType.CAUCHY
-    loss_scale: float = 1.0
-    gradient_tol: float = 1e-10
-    step_tol: float = 1e-8
-    initial_lambda: float = 1e-3
-    min_lambda: float = 1e-10
-    max_lambda: float = 1e10
-    verbose: bool = False
-    def __init__(self, kwargs:dict = None) -> None:...
+    def __init__(self,     
+        max_iterations: int = 100,
+        loss_type: pyposelib.BundleLossType = pyposelib.BundleLossType.CAUCHY,
+        loss_scale: float = 1.0,
+        gradient_tol: float = 1e-10,
+        step_tol: float = 1e-8,
+        initial_lambda: float = 1e-3,
+        min_lambda: float = 1e-10,
+        max_lambda: float = 1e10,) -> None:...
 
 class CameraPose:
     q: numpy.ndarray[numpy.float64[4, 1]] = numpy.array([0.0, 0.0, 0.0, 1.0])
     t: numpy.ndarray[numpy.float64[3, 1]] = numpy.array([0.0, 0.0, 0.0])
+    @property
     def R(self) -> numpy.ndarray[numpy.float64[3, 3]]:...
     def rotate(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:...
     def derotate(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:...
@@ -61,6 +61,7 @@ class Camera:
     def __init__(self) -> None:...
     def __init__(self, model_name: str, params: numpy.ndarray[numpy.float64], width: int, height: int) -> None:...
     def __init__(self, model_id: int, params: numpy.ndarray[numpy.float64], width: int, height: int) -> None:...
+    def __init__(self, K: numpy.ndarray[numpy.float64[3, 3]], width: int, height: int) -> None:...
     def project(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> numpy.ndarray[numpy.float64[2, 1]]:...
     def unproject(self, p: numpy.ndarray[numpy.float64[2, 1]]) -> numpy.ndarray[numpy.float64[3, 1]]:...
     def project_with_jac(self, p: numpy.ndarray[numpy.float64[3, 1]]) -> Tuple[numpy.ndarray[numpy.float64[2, 1]], numpy.ndarray[numpy.float64[2, 3]]]:...

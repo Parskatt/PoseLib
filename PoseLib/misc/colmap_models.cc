@@ -53,6 +53,23 @@ Camera::Camera(int id, const std::vector<double> &p, int w, int h) {
     width = w;
     height = h;
 }
+Camera::Camera(const Eigen::Matrix3d &K, int w, int h) {
+    if (K(0, 1) != 0.0 || K(1, 0) != 0.0 || 
+        K(2, 0) != 0.0 || K(2, 1) != 0.0 ) {
+        auto to_string = [](const Eigen::MatrixXd &mat) {
+            std::stringstream ss;
+            ss << mat;
+            return ss.str();};
+        throw std::invalid_argument(
+            "K must be focal x focal y principal x principal y. K = " + 
+            to_string(K));
+    }
+    model_id = Camera::id_from_string("PINHOLE");//Assume Pinhole model
+    params = {K(0, 0), K(1, 1), K(0, 2), K(1, 2)};
+    width = w;
+    height = h;
+}
+
 
 int Camera::id_from_string(const std::string &model_name) {
 #define SWITCH_CAMERA_MODEL_CASE(Model)                                                                                \

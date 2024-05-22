@@ -1,26 +1,38 @@
 import pyposelib
 import numpy as np
+import pytest
 
 def test_camera():
     pyposelib.Camera()
+    pyposelib.Camera("PINHOLE", [1,1,0,0], 10, 10)
+    #incorrect camera
+    with pytest.raises(ValueError):
+        pyposelib.Camera(np.random.randn(3,3), 10, 10)
+    K = np.zeros((3,3))
+    K[0,0] = 1
+    K[1,1] = 1
+    pyposelib.Camera(K, 10, 10)
     
 def test_camera_pose():
     pyposelib.CameraPose(np.random.rand(4,1), np.random.rand(3,1))
 
+
 def test_image():
+    #TODO: binds for constructor with campose and cam not working yet
     pyposelib.Image()
 
 def test_bundle_options():
-    pyposelib.BundleOptions()
+    x = pyposelib.BundleOptions(max_iterations = 1337)
+    assert x.max_iterations == 1337
 
 def test_ransac_options():
     pyposelib.RansacOptions()
 
 def test_relative_pose():
-    pyposelib.estimate_relative_pose(np.random.randn(5,2), np.random.randn(5,2), {})
+    pyposelib.estimate_relative_pose(np.random.randn(5,2), np.random.randn(5,2))
 
 def test_fundamental():
-    pyposelib.estimate_fundamental(np.random.randn(8,2), np.random.randn(8,2), {})
+    pyposelib.estimate_fundamental(np.random.randn(8,2), np.random.randn(8,2), {"real_focal_check": True})
 
 def test_absolute_pose():
     camera = {'model': 'SIMPLE_PINHOLE', 'width': 1200, 'height': 800, 'params': [960, 600, 400]}
